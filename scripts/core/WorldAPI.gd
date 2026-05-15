@@ -190,8 +190,8 @@ func update_chunk_loading(camera_world_pos: Vector3) -> bool:
 		floori(camera_world_pos.z / CHUNK_SIZE)
 	)
 	
-	# Only update if camera moved to a different chunk
-	if new_camera_chunk == camera_chunk_pos:
+	# Only skip updates after the initial visible chunk set has been loaded.
+	if new_camera_chunk == camera_chunk_pos and not loaded_chunk_positions.is_empty():
 		return false
 	
 	camera_chunk_pos = new_camera_chunk
@@ -241,6 +241,13 @@ func _register_default_block_types():
 	water.is_opaque = false
 	water.is_walkable = false
 	water.height = 0.5  # Half block
+	water.animated = true
+	water.animation_speed = 2.0
+	var water_frames: Array[Texture2D] = [
+		load("res://assets/blocks/isometric-water.svg") as Texture2D,
+		load("res://assets/blocks/isometric-water-foam.svg") as Texture2D
+	]
+	water.animation_frames = water_frames
 	register_block_type(water)
 	
 	var wood = BlockType.new("wood", "Wood")

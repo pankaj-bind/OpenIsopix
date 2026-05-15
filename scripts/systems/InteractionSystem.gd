@@ -33,6 +33,7 @@ var is_position_valid: bool = false
 
 ## Highlight sprite for cursor
 var highlight_sprite: Sprite2D
+const HIGHLIGHT_Z_INDEX: int = 4096
 
 ## Mouse/controller state
 var mouse_position: Vector2 = Vector2.ZERO
@@ -94,7 +95,7 @@ func _create_highlight_sprite():
 		renderer.world_layer.add_child(highlight_sprite)
 	else:
 		add_child(highlight_sprite)
-	highlight_sprite.z_index = 10000
+	highlight_sprite.z_index = HIGHLIGHT_Z_INDEX
 	highlight_sprite.centered = true
 
 func _update_mouse_position():
