@@ -23,7 +23,11 @@ func _ready():
 	
 	# Generate demo world
 	_generate_demo_world()
-	
+
+	# Load the initial visible chunks before the first full render.
+	if world_api:
+		world_api.update_chunk_loading(Vector3.ZERO)
+
 	# Initial render
 	if renderer:
 		renderer.render_world()
@@ -91,8 +95,12 @@ func _generate_demo_world():
 			# Create varied terrain
 			var block_type = "grass"
 			
-			# Add some water
-			if (x + z) % 7 == 0:
+			# Keep a visible pond near the initial camera position so the demo
+			# immediately exercises animated block rendering.
+			if abs(x) <= 2 and abs(z) <= 2:
+				block_type = "water"
+			# Add additional water channels through the terrain
+			elif (x + z) % 7 == 0:
 				block_type = "water"
 			# Add some stone
 			elif abs(x) > world_size / 2 or abs(z) > world_size / 2:

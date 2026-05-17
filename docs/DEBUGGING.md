@@ -26,7 +26,7 @@
 The demo prints useful debug information:
 - Block placement/removal confirmations
 - Interaction mode changes
-- Block queries (position, type, attributes)
+- Block attribute lookups through the world API
 - System initialization messages
 
 ### In-Game Debug Commands
@@ -34,10 +34,11 @@ The demo prints useful debug information:
 Press the following keys to test features:
 
 1. **World Manipulation**
-   - `1-4`: Select block type (Grass/Stone/Water/Torch)
+   - `1-5`: Select block type (Grass/Stone/Water/Wood/Soil)
+   - Press the same block type key twice to toggle full-height placement
    - `LMB`: Place selected block
    - `RMB`: Remove block at cursor
-   - `Space`: Cycle interaction modes (SELECT/PLACE/REMOVE/QUERY)
+   - `Space`: Cycle interaction modes (SELECT/PLACE/REMOVE)
 
 2. **Camera Controls**
    - `Arrow Keys`: Pan camera
@@ -47,25 +48,20 @@ Press the following keys to test features:
 
 3. **System Testing**
    - `F`: Reveal fog of war around cursor
-   - Click blocks in QUERY mode: Print block attributes
+   - `G`: Toggle fog globally
+   - `Ctrl+Z` / `Ctrl+Y`: Undo or redo block placement and removal
+   - Use `WorldAPI.get_block()` and `WorldAPI.get_block_attribute()` to inspect block data
 
-### Query Mode
+### Querying Blocks
 
-Set interaction mode to QUERY (press Space until mode shows "QUERY"), then click any block to see:
+Use the world API to inspect block state during debugging:
 
-```
-=== Block Query ===
-Position: (x, y, z)
-Type: block_type_id
-HP: current/max
-Height: 0.5 or 1.0
-Light Level: 0.0 to 1.0
-Revealed: true/false
-Solid: true/false
-Opaque: true/false
-Climbable: true/false
-Emits Light: true/false
-==================
+```gdscript
+var position = Vector3i(0, 0, 0)
+var block = world_api.get_block(position)
+print(world_api.get_block_attribute(position, "type_id"))
+print(world_api.get_block_attribute(position, "height"))
+print(world_api.get_block_attribute(position, "light_level"))
 ```
 
 ## Testing Scenarios
@@ -95,21 +91,30 @@ Emits Light: true/false
 
 ### 3. Lighting System
 
-**Test: Light Sources**
+**Test: Environmental Lighting**
 ```
-1. Press '4' to select Torch
-2. Place torches in different locations
-3. Observe lighting on nearby blocks
-4. Remove torches and watch lighting update
+1. Open `LightingSystem` in the running scene
+2. Call `set_environmental_level()` from the debugger or a temporary script
+3. Observe the rendered block light level change
 ```
 
-**Expected**: 
-- Torches emit yellow-orange light
-- Light attenuates with distance
-- Blocks in darkness are darker
-- Lighting updates when torches are added/removed
+**Expected**:
+- Registered blocks keep their individual `light_level`
+- Environmental lighting changes can be applied independently of the UI
+- Blocks render darker or brighter as their light level changes
 
-### 4. Fog of War
+### 4. Animated Blocks
+
+**Test: Water Animation**
+```
+1. Run the demo scene
+2. Find any water tile in the generated terrain
+3. Watch the tile for a few seconds
+```
+
+**Expected**: Water tiles cycle between their configured animation frames without a full world redraw
+
+### 5. Fog of War
 
 **Test: Map Revelation**
 ```
@@ -124,7 +129,7 @@ Emits Light: true/false
 - Revealed blocks are fully visible
 - Revelation persists
 
-### 5. Camera System
+### 6. Camera System
 
 **Test: Point of View Changes**
 ```
@@ -140,21 +145,20 @@ Emits Light: true/false
 - Zoom maintains center point
 - Movement controls adjust to rotation
 
-### 6. Interaction Modes
+### 7. Interaction Modes
 
 **Test: Mode Switching**
 ```
-1. Press Space to cycle modes: SELECT → PLACE → REMOVE → QUERY
-2. Observe cursor highlight color changes:
-   - SELECT: Yellow
-   - PLACE: Green
-   - REMOVE: Red
-   - QUERY: Blue
+1. Press Space to cycle modes: SELECT → PLACE → REMOVE
+2. Observe cursor behavior changes:
+   - SELECT: Emits block_selected
+   - PLACE: Places the selected block type
+   - REMOVE: Removes the hovered block
 ```
 
 **Expected**: Mode changes reflected in cursor and behavior
 
-### 7. Block Heights
+### 8. Block Heights
 
 **Test: Multi-Level Building**
 ```
@@ -228,10 +232,9 @@ Create `tests/manual_tests.md` and track:
 - [ ] Test all 4 pitch levels
 - [ ] Zoom in to max
 - [ ] Zoom out to min
-- [ ] Place torch and verify lighting
-- [ ] Remove torch and verify lighting updates
+- [ ] Apply environmental lighting levels and verify rendered brightness changes
 - [ ] Reveal fog of war
-- [ ] Query block in QUERY mode
+- [ ] Query block attributes through WorldAPI
 - [ ] Stack blocks vertically
 - [ ] Move camera to chunk boundaries
 - [ ] Place blocks across multiple chunks

@@ -104,6 +104,7 @@ Defines a block type with all its properties.
 @export var texture: Texture2D
 @export var animated: bool = false
 @export var animation_frames: Array[Texture2D]
+@export var animation_speed: float = 1.0
 @export var emits_light: bool = false
 @export var light_color: Color = Color.WHITE
 @export var light_intensity: float = 1.0
@@ -118,6 +119,10 @@ Defines a block type with all its properties.
 @export var on_click_enabled: bool = true
 @export var on_walk_over_enabled: bool = false
 ```
+
+Animated block types are advanced automatically by `IsometricRenderer` when
+`animated` is enabled and `animation_frames` contains textures. Static blocks
+continue to use their registered texture or the built-in placeholder texture.
 
 ### 3. BlockInstance (`scripts/core/BlockInstance.gd`)
 
@@ -202,7 +207,7 @@ Manages environmental and block-emitted lighting.
 
 ```gdscript
 enum EnvironmentalLevel {
-    PITCH_BLACK, VERY_DARK, DARK, DIM, 
+    PITCH_BLACK, VERY_DARK, DARK, DIM,
     NORMAL, BRIGHT, VERY_BRIGHT
 }
 ```
@@ -248,7 +253,7 @@ Handles user input and world interaction.
 #### Enums
 
 ```gdscript
-enum InteractionMode { SELECT, PLACE, REMOVE, QUERY }
+enum InteractionMode { SELECT, PLACE, REMOVE }
 ```
 
 #### Methods
@@ -280,13 +285,13 @@ func _ready():
     world_api = $WorldAPI
     camera = $IsometricCamera
     lighting = $LightingSystem
-    
+
     # Register custom blocks
     _register_custom_blocks()
-    
+
     # Generate world
     _generate_world()
-    
+
     # Setup game logic
     world_api.block_clicked.connect(_on_block_clicked)
 
@@ -300,7 +305,7 @@ func _register_custom_blocks():
     crystal.light_intensity = 1.5
     crystal.max_hp = 50.0
     world_api.register_block_type(crystal)
-    
+
     # Create a trap block
     var trap = BlockType.new("trap", "Spike Trap")
     trap.is_solid = true
@@ -313,11 +318,11 @@ func _generate_world():
     for x in range(-10, 10):
         for z in range(-10, 10):
             world_api.add_block(Vector3i(x, 0, z), "grass")
-    
+
     # Add some crystals
     world_api.add_block(Vector3i(0, 1, 0), "crystal")
     world_api.add_block(Vector3i(5, 1, 5), "crystal")
-    
+
     # Set darker environment
     lighting.set_environmental_level(LightingSystem.EnvironmentalLevel.DARK)
 

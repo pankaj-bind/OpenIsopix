@@ -7,10 +7,6 @@ extends Node2D
 @export var world_api: WorldAPI
 @export var camera: IsometricCamera
 
-## Tile size in pixels (increased for isometric diamond tiles)
-const TILE_SIZE = 64
-const HALF_TILE = TILE_SIZE / 2
-
 ## Rendering layers
 var world_layer: Node2D
 var fog_layer: CanvasLayer
@@ -18,20 +14,29 @@ var fog_layer: CanvasLayer
 ## Cache for rendered sprites
 var block_sprites: Dictionary = {}
 var textures: Dictionary = {}
+var animated_blocks: Dictionary = {}
+var animation_time: float = 0.0
 
 func _ready():
 	pass
 
+func _process(delta: float):
+	if animated_blocks.is_empty():
+		return
+
+	animation_time += delta
+	_update_animated_blocks()
+
 func initialize():
 	_setup_layers()
 	_generate_placeholder_textures()
-	
+
 	if world_api:
 		world_api.block_added.connect(_on_block_added)
 		world_api.block_removed.connect(_on_block_removed)
 		world_api.block_modified.connect(_on_block_modified)
 		world_api.chunk_loaded.connect(_on_chunk_loaded)
-	
+
 	if camera:
 		camera.heading_changed.connect(_on_heading_changed)
 		camera.pitch_changed.connect(_on_pitch_changed)
@@ -39,7 +44,7 @@ func initialize():
 func _setup_layers():
 	world_layer = Node2D.new()
 	add_child(world_layer)
-	
+
 	fog_layer = CanvasLayer.new()
 	fog_layer.layer = 2
 	add_child(fog_layer)
@@ -51,32 +56,16 @@ func _generate_placeholder_textures():
 	textures["water"] = load("res://assets/blocks/isometric-water.svg")
 	textures["wood"] = load("res://assets/blocks/isometric-wood.svg")
 	textures["soil"] = load("res://assets/blocks/isometric-soil.svg")
-	
-	print("Loaded isometric block textures: ", textures.keys())
 
-func _create_colored_texture(color: Color) -> ImageTexture:
-	var image = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	image.fill(color)
-	
-	# Add some shading for 3D effect
-	for y in range(TILE_SIZE):
-		for x in range(TILE_SIZE):
-			if x < 4 or y < 4:  # Top and left edges lighter
-				var current = image.get_pixel(x, y)
-				image.set_pixel(x, y, current.lightened(0.2))
-			elif x >= TILE_SIZE - 4 or y >= TILE_SIZE - 4:  # Bottom and right edges darker
-				var current = image.get_pixel(x, y)
-				image.set_pixel(x, y, current.darkened(0.2))
-	
-	return ImageTexture.create_from_image(image)
+	print("Loaded isometric block textures: ", textures.keys())
 
 func render_world():
 	# Clear existing sprites
 	_clear_all_sprites()
-	
+
 	if not world_api:
 		return
-	
+
 	# Get all chunks and render blocks
 	for chunk_key in world_api.chunks.keys():
 		var chunk = world_api.chunks[chunk_key]
@@ -87,46 +76,81 @@ func _render_chunk(chunk: Chunk):
 	var blocks = chunk.get_all_blocks()
 	# Sort for painter's algorithm (back to front)
 	blocks.sort_custom(_sort_blocks_for_rendering)
-	
+
 	for block in blocks:
 		_render_block(block)
 
 func _render_block(block: BlockInstance):
 	if not block or not block.block_type:
 		return
-	
+
 	var world_pos = block.position
 	var key = _world_pos_to_key(world_pos)
-	
+
 	# Create sprite if it doesn't exist
 	if not block_sprites.has(key):
 		var sprite = Sprite2D.new()
 		world_layer.add_child(sprite)
 		block_sprites[key] = sprite
-	
+
 	var sprite = block_sprites[key]
-	
+
 	# Set texture
-	var texture = textures.get(block.block_type.id)
+	var texture = _get_block_texture(block)
 	if texture:
 		sprite.texture = texture
 	else:
 		print("WARNING: No texture for block type: ", block.block_type.id)
-	
+
 	var iso_pos = camera.world_to_iso(Vector3(world_pos.x, world_pos.y, world_pos.z))
 	sprite.position = iso_pos
 	var height_scale = block.height
-	sprite.scale = Vector2(1, height_scale) 
-	
+	sprite.scale = Vector2(1, height_scale)
+
 	# Apply lighting
 	sprite.modulate = Color(block.light_level, block.light_level, block.light_level, 1.0)
-	
+
 	# Apply fog of war
 	if not block.is_revealed:
 		sprite.modulate.a = 0.3
-	
+
 	# Z-index for proper layering
 	sprite.z_index = world_pos.x + world_pos.z + world_pos.y * 1000
+
+	if _is_block_animated(block):
+		animated_blocks[key] = block
+	else:
+		animated_blocks.erase(key)
+
+func _get_block_texture(block: BlockInstance) -> Texture2D:
+	if not block or not block.block_type:
+		return null
+
+	var frame = block.block_type.get_current_frame(animation_time)
+	if frame:
+		return frame
+
+	return textures.get(block.block_type.id)
+
+func _is_block_animated(block: BlockInstance) -> bool:
+	return (
+		block
+		and block.block_type
+		and block.block_type.animated
+		and not block.block_type.animation_frames.is_empty()
+	)
+
+func _update_animated_blocks():
+	for key in animated_blocks.keys():
+		var block = animated_blocks[key]
+		if not block or not block_sprites.has(key):
+			animated_blocks.erase(key)
+			continue
+
+		var sprite = block_sprites[key]
+		var texture = _get_block_texture(block)
+		if texture:
+			sprite.texture = texture
 
 func _clear_all_sprites():
 	for key in block_sprites.keys():
@@ -134,6 +158,7 @@ func _clear_all_sprites():
 		if sprite:
 			sprite.queue_free()
 	block_sprites.clear()
+	animated_blocks.clear()
 
 func _remove_sprite(world_pos: Vector3i):
 	var key = _world_pos_to_key(world_pos)
@@ -141,6 +166,7 @@ func _remove_sprite(world_pos: Vector3i):
 		var sprite = block_sprites[key]
 		sprite.queue_free()
 		block_sprites.erase(key)
+	animated_blocks.erase(key)
 
 func _world_pos_to_key(pos: Vector3i) -> String:
 	return str(pos.x) + "," + str(pos.y) + "," + str(pos.z)
