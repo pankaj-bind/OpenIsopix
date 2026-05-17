@@ -17,17 +17,20 @@
 - **SELECT Mode** - Click blocks to query/select
 - **PLACE Mode** - Click to place selected block type
 - **REMOVE Mode** - Click to remove blocks
-- **QUERY Mode** - Click to get block information
 
 ## Mouse Actions
 - **Left Click** - Place block (when in PLACE mode) or Select/Query
-- **Right Click** - Remove block (when in REMOVE mode)
+- **Right Click** - Remove the hovered block
 
 ## Special Features
-- **F** - Toggle Fog of War (shows/hides explored areas)
+- **F** - Reveal fog of war around the camera center
+- **G** - Toggle fog globally
+- **Ctrl+Z** - Undo the last block placement/removal
+- **Ctrl+Y** - Redo an undone block placement/removal
 
 ## Tips
 1. Use **Space** to cycle between interaction modes
 2. Select block type with **1-5** before placing
-3. Right-click to quickly remove unwanted blocks
-4. Use **Q/E** to rotate and view from different angles
+3. Press the same block type key twice to toggle between its default half-height and full height
+4. Right-click to quickly remove unwanted blocks
+5. Use **Q/E** to rotate and view from different angles

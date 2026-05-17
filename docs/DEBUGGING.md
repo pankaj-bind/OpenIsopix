@@ -34,7 +34,8 @@ The demo prints useful debug information:
 Press the following keys to test features:
 
 1. **World Manipulation**
-   - `1-4`: Select block type (Grass/Stone/Water/Torch)
+   - `1-5`: Select block type (Grass/Stone/Water/Wood/Soil)
+   - Press the same block type key twice to toggle full-height placement
    - `LMB`: Place selected block
    - `RMB`: Remove block at cursor
    - `Space`: Cycle interaction modes (SELECT/PLACE/REMOVE)
@@ -47,6 +48,8 @@ Press the following keys to test features:
 
 3. **System Testing**
    - `F`: Reveal fog of war around cursor
+   - `G`: Toggle fog globally
+   - `Ctrl+Z` / `Ctrl+Y`: Undo or redo block placement and removal
    - Use `WorldAPI.get_block()` and `WorldAPI.get_block_attribute()` to inspect block data
 
 ### Querying Blocks
@@ -88,19 +91,17 @@ print(world_api.get_block_attribute(position, "light_level"))
 
 ### 3. Lighting System
 
-**Test: Light Sources**
+**Test: Environmental Lighting**
 ```
-1. Press '4' to select Torch
-2. Place torches in different locations
-3. Observe lighting on nearby blocks
-4. Remove torches and watch lighting update
+1. Open `LightingSystem` in the running scene
+2. Call `set_environmental_level()` from the debugger or a temporary script
+3. Observe the rendered block light level change
 ```
 
 **Expected**:
-- Torches emit yellow-orange light
-- Light attenuates with distance
-- Blocks in darkness are darker
-- Lighting updates when torches are added/removed
+- Registered blocks keep their individual `light_level`
+- Environmental lighting changes can be applied independently of the UI
+- Blocks render darker or brighter as their light level changes
 
 ### 4. Animated Blocks
 
@@ -231,8 +232,7 @@ Create `tests/manual_tests.md` and track:
 - [ ] Test all 4 pitch levels
 - [ ] Zoom in to max
 - [ ] Zoom out to min
-- [ ] Place torch and verify lighting
-- [ ] Remove torch and verify lighting updates
+- [ ] Apply environmental lighting levels and verify rendered brightness changes
 - [ ] Reveal fog of war
 - [ ] Query block attributes through WorldAPI
 - [ ] Stack blocks vertically
